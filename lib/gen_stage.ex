@@ -1941,12 +1941,6 @@ defmodule GenStage do
 
   ## Consumer messages
 
-  def handle_info({:"$gen_consumer", _, _} = msg, %{type: :producer} = stage) do
-    error_msg = 'GenStage producer ~tp received $gen_consumer message: ~tp~n'
-    :error_logger.error_msg(error_msg, [Utils.self_name(), msg])
-    {:noreply, stage}
-  end
-
   def handle_info(
         {:"$gen_consumer", {producer_pid, ref}, events},
         %{type: :producer_consumer, events: {queue, counter}, producers: producers} = stage
@@ -1966,7 +1960,7 @@ defmodule GenStage do
 
   def handle_info(
         {:"$gen_consumer", {producer_pid, ref} = from, events},
-        %{type: :consumer, producers: producers, mod: mod, state: state} = stage
+        %{producers: producers, mod: mod, state: state} = stage
       )
       when is_list(events) do
     case producers do
@@ -2423,12 +2417,6 @@ defmodule GenStage do
     do: consumer_subscribe(nil, to, opts, stage)
 
   defp consumer_subscribe(to, stage), do: consumer_subscribe(nil, to, [], stage)
-
-  defp consumer_subscribe(_cancel, to, _opts, %{type: :producer} = stage) do
-    error_msg = 'GenStage producer ~tp cannot be subscribed to another stage: ~tp~n'
-    :error_logger.error_msg(error_msg, [Utils.self_name(), to])
-    {:reply, {:error, :not_a_consumer}, stage}
-  end
 
   defp consumer_subscribe(current, to, opts, stage) do
     with {:ok, max, _} <- Utils.validate_integer(opts, :max_demand, 1000, 1, :infinity, false),
